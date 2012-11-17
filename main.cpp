@@ -5,10 +5,16 @@
 #include <ctime>
 #include <queue>
 #include <stack>
-#include <deque>
 #include <algorithm>
 #include <sstream>
 #include <cstdio>
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1500) // Visual Studio 2008 or higher
+    #include <random>
+#endif//для random
+ #if defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__ >= 402) // GCC 4.2 or higher
+    #include <tr1/random>
+#endif//для random
 
 using namespace std;
 
@@ -34,38 +40,59 @@ inline ostream& operator<<(ostream &os, const vector< vector<T> >& v){
 class Graph{
     //поля
     vector< vector<int> > adjMatr;
-		bool used[100];vector<int> ans;// для топологической сортировки
+	bool used[100];vector<int> ans;// для топологической сортировки
     //методы
     public:
     int numVertex();
     Graph();//конструктор
     Graph(int n);//конструктор
+	Graph(int n,int j);//конструктор
     vector< vector<int> > show_graph();
     vector< vector<int> > floyd(); 
-    vector<int>  dijkstra(int s);
+	vector<int>  dijkstra(int s);
 	vector<int>  Levit(int v);
-	  vector<int> topological_sort(int v); void dfs(int v);
+	vector<int> topological_sort(int v); 
+	void dfs(int v);
 };
-vector< vector<int> > Graph::show_graph(){
+vector< vector<int> > Graph::show_graph()//возвращает саму матрицу
+{
     return adjMatr;
 }
-int Graph::numVertex(){
+int Graph::numVertex()//размер
+{
     return adjMatr.size();
 }
-Graph::Graph(){
+Graph::Graph()//создает граф
+{
     int numVertex=0;
     vector< vector<int> > adjMatr;
 }
-
-Graph::Graph(int n){
+Graph::Graph(int n)//заполняет слуайным образом матрицу смежности
+{
     for(int k=0;k<n;++k){
         vector<int> v(n,0);
-        for(int i=0;i<n;++i){if (i==k) v[i]=0; else v[i]=rand_int(1,100);}
+        for(int i=0;i<n;++i){if (k==i) v[i]=0; else v[i]=rand_int(1,100);}
         //cout<<v<<endl;
         adjMatr.push_back(v);
     }
 }
-
+Graph::Graph(int n,int j)//заполняет слуайным образом матрицу смежности
+{
+	///typedef std::tr1::ranlux64_base_01            ENG;    // subtract_with_carry_01
+    typedef std::tr1::mt19937                     ENG;    // Mersenne Twister
+    typedef std::tr1::uniform_int<unsigned int> DIST;   // Normal Distribution
+    typedef std::tr1::variate_generator<ENG,DIST> GEN;    // Variate generator
+    //typedef std::tr1::minstd_rand gen;
+    ENG  eng;
+    DIST dist(0,j);
+    GEN  gen(eng,dist); 
+    for(int k=0;k<n;++k){
+        vector<int> v(n,0);
+        for(int i=0;i<n;++i){if (k==i) v[i]=0; else v[i]=gen();}
+        //cout<<v<<endl;
+        adjMatr.push_back(v);
+    }
+}
 vector< vector<int> > Graph::floyd()//агоритм Флойда
 {
    for (int k=0; k<adjMatr.size(); ++k)
@@ -74,8 +101,7 @@ vector< vector<int> > Graph::floyd()//агоритм Флойда
 			adjMatr[i][j] = min (adjMatr[i][j], adjMatr[i][k] + adjMatr[k][j]);
    return adjMatr;
 }
-
-vector<int> Graph::dijkstra(int s)
+vector<int> Graph::dijkstra(int s)//агоритм Дейкстры
 {
 	int n = adjMatr.size();
 
@@ -107,8 +133,7 @@ vector<int> Graph::dijkstra(int s)
 	//for (int i=0;i<n;++i) cout<<d[i]<<" ";
 	return d;
 }
-
- vector<int > Graph::Levit(int v1)
+vector<int > Graph::Levit(int v1)
 {
 	int n=numVertex();
 const int inf = 1000*1000*1000;
@@ -142,8 +167,7 @@ if (d[to] > d[v] + len)
 	}
 	return d;
 }
-
-    void Graph::dfs(int v)
+void Graph::dfs(int v)
 {	
 	int n=numVertex();
 
@@ -157,8 +181,7 @@ if (d[to] > d[v] + len)
 	ans.push_back (v);
 	
 }
-
-    vector<int > Graph::topological_sort(int v1)
+vector<int > Graph::topological_sort(int v1)
  {	int n=numVertex();
 	for (int i=0; i<n; ++i)
 		used[i] = false;
@@ -169,30 +192,28 @@ if (d[to] > d[v] + len)
 	reverse (ans.begin(), ans.end());
 	return ans;
  }
-
 int main()
 {
     srand ( ( time (NULL) ) );
-	int k,s;
-	cin>>k;//количество вершин
-    Graph g(k);
-    cout<<g.show_graph();
-   /// cout << g;
-	g.floyd();
-	cout<<endl;
+	int k,s,v,l;
+    cout<<"Razmer i max znachenie"<<endl;
+	cin>>k>>l;//k-количество вершин,l-максимальное значесние в матрице,т.е. от 0 до l
+    //Graph g(k);// содает граф g с k вершинами
+	Graph g(k,l);//создает граф g с k вершинами 
+    cout<<g.show_graph()<<endl;
+	cout<<"Algoritm Floyda"<<endl;
+   	g.floyd();
 	cout<<g.show_graph();
 	cout<<endl;
-	cin>>s;
-	cout<<g.dijkstra (s-1);
-	cin >> k;//количество вершин в графе
-    srand ( ( time (NULL) ) );
-    Graph g(k);
-    ///cout<<g.numVertex();
-    cout<<g.show_graph();
-    ///    cout<<g;
-	int v;	cin >> v;//задаем вершину
-	cout <<"\n " << g.Levit(v);// Алгоритм Левита
-	cout <<"\n " << g.topological_sort(v);// Топологическая сортировка
-	system ("pause");
+	cout<<"Nomer vershini,s kotooi njno nachat poisk algoritm Dijkstri";
+	cin>>s;//поиск от вершины s
+	cout<<g.dijkstra (s-1)<<endl;
+	cout<<"Nomer vershini,s kotooi njno nachat poisk algoritm Levita";
+	cin>>v;
+	cout << g.Levit(v-1)<<"\n \n";// Алгоритм Левита
+	cout<<"Nomer veshini dlya topologicheskoi sortirvki";
+	cin>>v;
+    cout <<g.topological_sort(v-1)<<endl;// Топологическая сортировка
+    system("pause");
     return 0;
-} 
+}
